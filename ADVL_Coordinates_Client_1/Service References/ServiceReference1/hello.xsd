@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:tns="http://schemas.datacontract.org/2004/07/ADVL_ApplicationNetwork" elementFormDefault="qualified" targetNamespace="http://schemas.datacontract.org/2004/07/ADVL_ApplicationNetwork" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="clsConnection.AppTypes">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Application" />
+      <xs:enumeration value="MainNode" />
+      <xs:enumeration value="Node" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="clsConnection.AppTypes" nillable="true" type="tns:clsConnection.AppTypes" />
+</xs:schema>
