@@ -23,11 +23,11 @@ limitations under the License.
 - - -
 
 
-ADVL_Coordinates_Client_1 software demonstrates the exchange of information with the Coordinates application through the Application Network.
+The Andorville™ Coordinates Client software demonstrates the exchange of information with the Coordinates application through the Application Network.
 
 The Coordinates Client application is written in Visual Basic 2015.
 
-The program uses the ADVL_Utilities_Library_1 class library.
+The program uses the Andorville™ Utilities class library.
 
 The Application Network and Coordinates application must be running and connected to the network before the Coordinates Client can perform coordinate conversions.
 
