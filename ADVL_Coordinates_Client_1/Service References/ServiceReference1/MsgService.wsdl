@@ -4,7 +4,7 @@
     <wsp:ExactlyOne>
       <wsp:All>
         <wsrm:RMAssertion xmlns:wsrm="http://schemas.xmlsoap.org/ws/2005/02/rm/policy">
-          <wsrm:InactivityTimeout Milliseconds="600000" />
+          <wsrm:InactivityTimeout Milliseconds="3600000" />
           <wsrm:AcknowledgementInterval Milliseconds="200" />
         </wsrm:RMAssertion>
         <sp:SymmetricBinding xmlns:sp="http://schemas.xmlsoap.org/ws/2005/07/securitypolicy">
@@ -454,9 +454,9 @@
   </wsp:Policy>
   <wsdl:types>
     <xsd:schema targetNamespace="http://tempuri.org/Imports">
-      <xsd:import schemaLocation="http://localhost:8080/hello?xsd=xsd0" namespace="http://tempuri.org/" />
-      <xsd:import schemaLocation="http://localhost:8080/hello?xsd=xsd1" namespace="http://schemas.microsoft.com/2003/10/Serialization/" />
-      <xsd:import schemaLocation="http://localhost:8080/hello?xsd=xsd2" namespace="http://schemas.datacontract.org/2004/07/ADVL_ApplicationNetwork" />
+      <xsd:import schemaLocation="http://localhost:8733/ADVLService?xsd=xsd0" namespace="http://tempuri.org/" />
+      <xsd:import schemaLocation="http://localhost:8733/ADVLService?xsd=xsd1" namespace="http://schemas.microsoft.com/2003/10/Serialization/" />
+      <xsd:import schemaLocation="http://localhost:8733/ADVLService?xsd=xsd2" namespace="http://schemas.datacontract.org/2004/07/ADVL_ApplicationNetwork" />
     </xsd:schema>
   </wsdl:types>
   <wsdl:message name="IMsgService_Connect_InputMessage">
@@ -627,9 +627,9 @@
   </wsdl:binding>
   <wsdl:service name="MsgService">
     <wsdl:port name="WSDualHttpBinding_IMsgService" binding="tns:WSDualHttpBinding_IMsgService">
-      <soap12:address location="http://localhost:8080/hello" />
+      <soap12:address location="http://localhost:8733/ADVLService" />
       <wsa10:EndpointReference>
-        <wsa10:Address>http://localhost:8080/hello</wsa10:Address>
+        <wsa10:Address>http://localhost:8733/ADVLService</wsa10:Address>
         <Identity xmlns="http://schemas.xmlsoap.org/ws/2006/02/addressingidentity">
           <Upn>WalnutRd\Robert</Upn>
         </Identity>

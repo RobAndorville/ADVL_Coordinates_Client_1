@@ -71,21 +71,27 @@ Public Class Main
     Public WithEvents Message As New ADVL_Utilities_Library_1.Message 'This object is used to display messages in the Messages window.
     Public WithEvents ApplicationUsage As New ADVL_Utilities_Library_1.Usage 'This object stores application usage information.
 
-
-
     'Declare Forms used by the application:
-    Public WithEvents Utilities As frmUtilities
+    'Public WithEvents Utilities As frmUtilities
     'Public WithEvents XmsgInstructions As frmXmsgInstructions
-
 
     'Declare objects used to connect to the Application Network:
     Public client As ServiceReference1.MsgServiceClient
     Public WithEvents XMsg As New ADVL_Utilities_Library_1.XMessage
     Dim XDoc As New System.Xml.XmlDocument
     Public Status As New System.Collections.Specialized.StringCollection
-    Dim ClientName As String 'The name of the client requesting coordinate operations
-    Dim MessageText As String 'The text of a message sent through the MessageExchange
-    Dim MessageDest As String 'The destination of a message sent through the MessageExchange.
+    'Dim ClientName As String 'The name of the client requesting coordinate operations
+    'Dim ClientAppName As String = "" 'The name of the client requesting service
+    Dim ClientConnName As String = "" 'The name of the client connection requesting service
+    Dim ClientAppLocn As String = "" 'The location in the Client application requesting service
+    'Dim MessageText As String 'The text of a message sent through the MessageExchange
+    'Dim MessageDest As String 'The destination of a message sent through the MessageExchange.
+    Dim MessageXDoc As System.Xml.Linq.XDocument
+    Dim xmessage As XElement 'This will contain the message. It will be added to MessageXDoc.
+    Dim xlocns As New List(Of XElement) 'A list of locations. Each location forms part of the reply message. The information in the reply message will be sent to the specified location in the client application.
+    Dim MessageText As String = "" 'The text of a message sent through the Application Network.
+
+    Dim ConnectionName As String = "" 'The name of the connection used to connect this application to the AppNet.
 
 #End Region 'Variable Declarations ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -125,17 +131,22 @@ Public Class Main
                 _instrReceived = value
 
                 'Add the message to the XMessages window:
-                Message.Color = Color.Blue
-                Message.FontStyle = FontStyle.Bold
-                'Message.Add("Message received: " & vbCrLf)
-                Message.XAdd("Message received: " & vbCrLf)
-                Message.SetNormalStyle()
-                Message.XAdd(_instrReceived & vbCrLf & vbCrLf)
+                'Message.Color = Color.Blue
+                'Message.FontStyle = FontStyle.Bold
+                'Message.XAdd("Message received: " & vbCrLf)
+                'Message.SetNormalStyle()
+                'Message.XAdd(_instrReceived & vbCrLf & vbCrLf)
+                Message.XAddText("Message received: " & vbCrLf, "XmlReceivedNotice")
 
                 If _instrReceived.StartsWith("<XMsg>") Then 'This is an XMessage set of instructions.
                     Try
                         Dim XmlHeader As String = "<?xml version=""1.0"" encoding=""utf-8"" standalone=""yes""?>"
                         XDoc.LoadXml(XmlHeader & vbCrLf & _instrReceived)
+
+                        Message.XAddXml(XDoc)
+                        'Message.XAddText(vbCrLf, "Message") 'Add extra line
+                        Message.XAddText(vbCrLf, "Normal") 'Add extra line
+
                         XMsg.Run(XDoc, Status)
                     Catch ex As Exception
                         Message.Add("Error running XMsg: " & ex.Message & vbCrLf)
@@ -144,16 +155,23 @@ Public Class Main
                     'XMessage has been run.
                     'Reply to this message:
                     'Add the message reply to the XMessages window:
-                    If ClientName = "" Then
+                    'If ClientName = "" Then
+                    'If ClientAppName = "" Then
+                    If ClientConnName = "" Then
                         'No client to send a message to!
                     Else
-                        Message.Color = Color.Red
-                        Message.FontStyle = FontStyle.Bold
-                        'Message.Add("Message sent to " & ClientName & ":" & vbCrLf)
-                        Message.XAdd("Message sent to " & ClientName & ":" & vbCrLf)
-                        Message.SetNormalStyle()
-                        Message.XAdd(MessageText & vbCrLf & vbCrLf)
-                        MessageDest = ClientName
+                        'Message.Color = Color.Red
+                        'Message.FontStyle = FontStyle.Bold
+                        'Message.XAdd("Message sent to " & ClientName & ":" & vbCrLf)
+                        'Message.SetNormalStyle()
+                        'Message.XAdd(MessageText & vbCrLf & vbCrLf)
+                        'MessageDest = ClientName
+                        'Message.XAddText("Message sent to " & ClientAppName & ":" & vbCrLf, "XmlSentNotice")
+                        Message.XAddText("Message sent to " & ClientConnName & ":" & vbCrLf, "XmlSentNotice")
+                        Message.XAddXml(MessageText)
+                        'Message.XAddText(vbCrLf, "Message") 'Add extra line
+                        Message.XAddText(vbCrLf, "Normal") 'Add extra line
+
                         'SendMessage sends the contents of MessageText to MessageDest.
                         SendMessage() 'This subroutine triggers the timer to send the message after a short delay.
                     End If
@@ -182,7 +200,7 @@ Public Class Main
                                <!---->
                                <ProjectedCrsList>
                                    <%= From Item In cmbProjectedCRS.Items
-                                       Select _
+                                       Select
                                        <ProjectedCrsName><%= Item %></ProjectedCrsName>
                                    %>
                                </ProjectedCrsList>
@@ -196,36 +214,6 @@ Public Class Main
         Project.SaveXmlSettings(SettingsFileName, settingsData)
     End Sub
 
-
-    'Private Sub WriteFormSettingsXmlFile()
-    '    'Write form settings
-
-    '    Dim settingsData = <?xml version="1.0" encoding="utf-8"?>
-    '                       <!---->
-    '                       <!--Form settings for Main form.-->
-    '                       <FormSettings>
-    '                           <Left><%= Me.Left %></Left>
-    '                           <Top><%= Me.Top %></Top>
-    '                           <Width><%= Me.Width %></Width>
-    '                           <Height><%= Me.Height %></Height>
-    '                           <!---->
-    '                           <ProjectedCrsList>
-    '                               <%= From Item In cmbProjectedCRS.Items
-    '                                   Select _
-    '                                   <ProjectedCrsName><%= Item %></ProjectedCrsName>
-    '                               %>
-    '                           </ProjectedCrsList>
-    '                           <SelectedCrs><%= cmbProjectedCRS.SelectedIndex %></SelectedCrs>
-    '                           <SelectedTabIndex><%= TabControl1.SelectedIndex %></SelectedTabIndex>
-    '                       </FormSettings>
-
-    '    If Trim(ProjectPath) <> "" Then 'Write the Form Settings file in the Project Directory
-    '        settingsData.Save(ProjectPath & "\" & "FormSettings_" & Me.Text & ".xml")
-    '    Else 'Write the Form Settings file in the Application Directory
-    '        settingsData.Save(ApplicationDir & "\" & "FormSettings_" & Me.Text & ".xml")
-    '    End If
-
-    'End Sub
 
     Private Sub RestoreFormSettings()
         'Read the form settings from an XML document.
@@ -268,6 +256,7 @@ Public Class Main
             'Add code to read other saved setting here:
 
             'Read other settings:
+            cmbProjectedCRS.Items.Clear()
             For Each Item In Settings.<FormSettings>.<ProjectedCrsList>.<ProjectedCrsName>
                 'For Each Item In settingsData.<FormSettings>.<ProjectedCrsList>
                 cmbProjectedCRS.Items.Add(Item.Value)
@@ -282,116 +271,12 @@ Public Class Main
             Else
                 TabControl1.SelectedIndex = Settings.<FormSettings>.<SelectedTabIndex>.Value
             End If
-
+        Else
+            'No settings file.
+            cmbProjectedCRS.Items.Clear() 'Clear the Projected CRS list
         End If
     End Sub
 
-    'Private Sub ReadFormSettingsXmlFile()
-    '    'Read the Form Settings XML file:
-
-    '    Dim FilePath As String
-
-    '    If Trim(ProjectPath) <> "" Then 'Read the Form Settings file in the Project Directory
-    '        FilePath = ProjectPath & "\" & "FormSettings_" & Me.Text & ".xml"
-    '        If System.IO.File.Exists(FilePath) Then
-    '            ReadSettings(FilePath)
-    '        Else
-    '            'Initialise property values:
-    '        End If
-    '    Else 'Read the Form Settings in the Application Directory
-    '        FilePath = ApplicationDir & "\" & "FormSettings_" & Me.Text & ".xml"
-    '        If System.IO.File.Exists(FilePath) Then
-    '            ReadSettings(FilePath)
-
-    '        Else
-    '            'Initialise property values:
-    '        End If
-    '    End If
-
-    'End Sub
-
-    'Private Sub ReadSettings(ByVal FilePath As String)
-    '    Dim settingsData As System.Xml.Linq.XDocument = XDocument.Load(FilePath)
-
-    '    'Read form position and size:
-    '    Me.Left = settingsData.<FormSettings>.<Left>.Value
-    '    Me.Top = settingsData.<FormSettings>.<Top>.Value
-    '    Me.Height = settingsData.<FormSettings>.<Height>.Value
-    '    Me.Width = settingsData.<FormSettings>.<Width>.Value
-
-    '    'Read other settings:
-    '    For Each Item In settingsData.<FormSettings>.<ProjectedCrsList>.<ProjectedCrsName>
-    '        'For Each Item In settingsData.<FormSettings>.<ProjectedCrsList>
-    '        cmbProjectedCRS.Items.Add(Item.Value)
-    '    Next
-    '    'If IsNothing(settingsData.<FormSettings>.<SelectedCrs>.Value) Then
-    '    If settingsData.<FormSettings>.<SelectedCrs>.Value = Nothing Then
-    '    Else
-    '        cmbProjectedCRS.SelectedIndex = settingsData.<FormSettings>.<SelectedCrs>.Value
-    '    End If
-    '    If settingsData.<FormSettings>.<SelectedTabIndex>.Value = Nothing Then
-
-    '    Else
-    '        TabControl1.SelectedIndex = settingsData.<FormSettings>.<SelectedTabIndex>.Value
-    '    End If
-
-
-    'End Sub
-
-    'Private Sub WriteApplicationInfoXmlFile()
-    '    'Write the Application Info file:
-
-    '    Dim applicationInfo = <?xml version="1.0" encoding="utf-8"?>
-    '                          <!---->
-    '                          <!--Application Information file for Application: ADVL_CoordinatesClient-->
-    '                          <!---->
-    '                          <!--Application Information.-->
-    '                          <ApplicationInfo>
-    '                              <ApplicationLastUsed><%= Format(Now, "d-MMM-yyyy H:mm:ss") %></ApplicationLastUsed>
-    '                              <!---->
-    '                              <LastProjectUsed>
-    '                                  <Name><%= ProjectName %></Name>
-    '                                  <Description><%= ProjectDescription %></Description>
-    '                                  <Path><%= ProjectPath %></Path>
-    '                                  <CreationDate><%= Format(ProjectCreationDate, "d-MMM-yyyy H:mm:ss") %></CreationDate>
-    '                                  <LastUsed><%= Format(Now, "d-MMM-yyyy H:mm:ss") %></LastUsed>
-    '                              </LastProjectUsed>
-    '                              <!---->
-    '                          </ApplicationInfo>
-
-    '    applicationInfo.Save(ApplicationDir & "\" & "Application_Info.xml")
-
-    'End Sub
-
-    'Private Sub WriteProjectInfoXmlFile()
-    '    'Write the Project Info file:
-
-    '    If ProjectPath <> "" Then
-    '        Dim projectInfo = <?xml version="1.0" encoding="utf-8"?>
-    '                          <!---->
-    '                          <!--Project Information file for Application: ADVL_CoordinatesClient-->
-    '                          <ProjectInfo>
-    '                              <!---->
-    '                              <!--Application Information.-->
-    '                              <ApplicationInfo>
-    '                                  <Name><%= "TDS_Import" %></Name>
-    '                                  <Version><%= "1.00" %></Version>
-    '                              </ApplicationInfo>
-    '                              <!---->
-    '                              <!--Project Information.-->
-    '                              <Project>
-    '                                  <Name><%= ProjectName %></Name>
-    '                                  <Description><%= ProjectDescription %></Description>
-    '                                  <Path><%= ProjectPath %></Path>
-    '                                  <CreationDate><%= Format(ProjectCreationDate, "d-MMM-yyyy H:mm:ss") %></CreationDate>
-    '                                  <LastUsed><%= Format(Now, "d-MMM-yyyy H:mm:ss") %></LastUsed>
-    '                              </Project>
-    '                              <!---->
-    '                          </ProjectInfo>
-
-    '        projectInfo.Save(ProjectPath & "\" & "Project_Info.xml")
-    '    End If
-    'End Sub
 
     Private Sub ReadApplicationInfo()
         'Read the Application Information.
@@ -419,9 +304,9 @@ Public Class Main
 
         'Author -----------------------------------------------------------------------------------------------------------
         ApplicationInfo.Author.Name = "Signalworks Pty Ltd"
-        ApplicationInfo.Author.Description = "Signalworks Pty Ltd" & vbCrLf & _
-            "Australian Proprietary Company" & vbCrLf & _
-            "ABN 26 066 681 598" & vbCrLf & _
+        ApplicationInfo.Author.Description = "Signalworks Pty Ltd" & vbCrLf &
+            "Australian Proprietary Company" & vbCrLf &
+            "ABN 26 066 681 598" & vbCrLf &
             "Registration Date 05/10/1994"
 
         ApplicationInfo.Author.Contact = "http://www.andorville.com.au/"
@@ -461,7 +346,7 @@ Public Class Main
         ApplicationInfo.Trademarks.Add(Trademark2)
 
         'License -------------------------------------------------------------------------------------------------------
-        ApplicationInfo.License.Type = ADVL_Utilities_Library_1.License.Types.Apache_License_2_0
+        ApplicationInfo.License.Code = ADVL_Utilities_Library_1.License.Codes.Apache_License_2_0
         ApplicationInfo.License.CopyrightOwnerName = "Signalworks Pty Ltd, ABN 26 066 681 598"
         ApplicationInfo.License.PublicationYear = "2016"
         ApplicationInfo.License.Notice = ApplicationInfo.License.ApacheLicenseNotice
@@ -492,17 +377,17 @@ Public Class Main
         NewLib.Description = "System Utility classes used in Andorville (TM) software development system applications"
         NewLib.CreationDate = "7-Jan-2016 12:00:00"
         NewLib.LicenseNotice = "Copyright 2016 Signalworks Pty Ltd, ABN 26 066 681 598" & vbCrLf &
-                               vbCrLf & _
-                               "Licensed under the Apache License, Version 2.0 (the ""License"");" & vbCrLf & _
-                               "you may not use this file except in compliance with the License." & vbCrLf & _
-                               "You may obtain a copy of the License at" & vbCrLf & _
-                               vbCrLf & _
-                               "http://www.apache.org/licenses/LICENSE-2.0" & vbCrLf & _
-                               vbCrLf & _
-                               "Unless required by applicable law or agreed to in writing, software" & vbCrLf & _
-                               "distributed under the License is distributed on an ""AS IS"" BASIS," & vbCrLf & _
-                               "WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied." & vbCrLf & _
-                               "See the License for the specific language governing permissions and" & vbCrLf & _
+                               vbCrLf &
+                               "Licensed under the Apache License, Version 2.0 (the ""License"");" & vbCrLf &
+                               "you may not use this file except in compliance with the License." & vbCrLf &
+                               "You may obtain a copy of the License at" & vbCrLf &
+                               vbCrLf &
+                               "http://www.apache.org/licenses/LICENSE-2.0" & vbCrLf &
+                               vbCrLf &
+                               "Unless required by applicable law or agreed to in writing, software" & vbCrLf &
+                               "distributed under the License is distributed on an ""AS IS"" BASIS," & vbCrLf &
+                               "WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied." & vbCrLf &
+                               "See the License for the specific language governing permissions and" & vbCrLf &
                                "limitations under the License." & vbCrLf
 
         NewLib.CopyrightNotice = "Copyright 2016 Signalworks Pty Ltd, ABN 26 066 681 598"
@@ -513,9 +398,9 @@ Public Class Main
         NewLib.Version.Revision = 0
 
         NewLib.Author.Name = "Signalworks Pty Ltd"
-        NewLib.Author.Description = "Signalworks Pty Ltd" & vbCrLf & _
-            "Australian Proprietary Company" & vbCrLf & _
-            "ABN 26 066 681 598" & vbCrLf & _
+        NewLib.Author.Description = "Signalworks Pty Ltd" & vbCrLf &
+            "Australian Proprietary Company" & vbCrLf &
+            "ABN 26 066 681 598" & vbCrLf &
             "Registration Date 05/10/1994"
 
         NewLib.Author.Contact = "http://www.andorville.com.au/"
@@ -612,21 +497,50 @@ Public Class Main
 
     End Sub
 
+    Private Sub RestoreProjectSettings()
+        'Restore the project settings from an XML document.
+
+        Dim SettingsFileName As String = "ProjectSettings_" & ApplicationInfo.Name & "_" & Me.Text & ".xml"
+
+        If Project.SettingsFileExists(SettingsFileName) Then
+            Dim Settings As System.Xml.Linq.XDocument
+            Project.ReadXmlSettings(SettingsFileName, Settings)
+
+            If IsNothing(Settings) Then 'There is no Settings XML data.
+                Exit Sub
+            End If
+
+            'Restore a Project Setting example:
+            If Settings.<ProjectSettings>.<Setting1>.Value = Nothing Then
+                'Project setting not saved.
+                'Setting1 = ""
+            Else
+                'Setting1 = Settings.<ProjectSettings>.<Setting1>.Value
+            End If
+
+            'Continue restoring saved settings.
+
+        End If
+
+    End Sub
+
 #End Region 'Process XML Files ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #Region " Form Display Methods - Code used to display this form." '----------------------------------------------------------------------------------------------------------------------------
 
     Private Sub Main_Load(sender As Object, e As EventArgs) Handles Me.Load
 
+        'Write the startup messages in a stringbuilder object.
+        'Messages cannot be written using Message.Add until this is set up later in the startup sequence.
+        Dim sb As New System.Text.StringBuilder
+        sb.Append("------------------- Starting Application: ADVL Coordinates Client 1 Application ---------------------------------------------------------------- " & vbCrLf)
+
         'Set the Application Directory path: ------------------------------------------------
         Project.ApplicationDir = My.Application.Info.DirectoryPath.ToString
 
         'Read the Application Information file: ---------------------------------------------
         ApplicationInfo.ApplicationDir = My.Application.Info.DirectoryPath.ToString 'Set the Application Directory property
-        'If ApplicationInfo.ApplicationLocked Then
-        '    MessageBox.Show("The application is locked. If the application is not already in use, remove the 'Application_Info.lock file from the application directory: " & ApplicationInfo.ApplicationDir, "Notice", MessageBoxButtons.OK)
-        '    Application.Exit()
-        'End If
+
         If ApplicationInfo.ApplicationLocked Then
             MessageBox.Show("The application is locked. If the application is not already in use, remove the 'Application_Info.lock file from the application directory: " & ApplicationInfo.ApplicationDir, "Notice", MessageBoxButtons.OK)
             Dim dr As Windows.Forms.DialogResult
@@ -637,6 +551,7 @@ Public Class Main
                 Application.Exit()
             End If
         End If
+
         ReadApplicationInfo()
         ApplicationInfo.LockApplication()
 
@@ -645,6 +560,7 @@ Public Class Main
         ApplicationUsage.SaveLocn.Type = ADVL_Utilities_Library_1.FileLocation.Types.Directory
         ApplicationUsage.SaveLocn.Path = Project.ApplicationDir
         ApplicationUsage.RestoreUsageInfo()
+        sb.Append("Application usage: Total duration = " & Format(ApplicationUsage.TotalDuration.TotalHours, "#0.##") & " hours" & vbCrLf)
 
         'Restore Project information: -------------------------------------------------
         Project.ApplicationName = ApplicationInfo.Name
@@ -658,8 +574,7 @@ Public Class Main
         Message.ApplicationName = ApplicationInfo.Name
         Message.SettingsLocn = Project.SettingsLocn
 
-        'Restore the form settings: ---------------------------------------------------------
-        RestoreFormSettings()
+
 
         'Set up input angle unit options:
         cmbInput.Items.Add("Degrees, Minutes, Seconds")
@@ -710,6 +625,49 @@ Public Class Main
         'txtOutput2.Location = New Point(733, 123)
         txtOutput2.Location = New Point(733, 155)
 
+        'Restore the form settings: ---------------------------------------------------------
+        RestoreFormSettings()
+
+        RestoreProjectSettings() 'Restore the Project settings
+
+        'Show the project information: ------------------------------------------------------
+        txtProjectName.Text = Project.Name
+        txtProjectDescription.Text = Project.Description
+        Select Case Project.Type
+            Case ADVL_Utilities_Library_1.Project.Types.Directory
+                txtProjectType.Text = "Directory"
+            Case ADVL_Utilities_Library_1.Project.Types.Archive
+                txtProjectType.Text = "Archive"
+            Case ADVL_Utilities_Library_1.Project.Types.Hybrid
+                txtProjectType.Text = "Hybrid"
+            Case ADVL_Utilities_Library_1.Project.Types.None
+                txtProjectType.Text = "None"
+        End Select
+        txtCreationDate.Text = Format(Project.Usage.FirstUsed, "d-MMM-yyyy H:mm:ss")
+        txtLastUsed.Text = Format(Project.Usage.LastUsed, "d-MMM-yyyy H:mm:ss")
+        Select Case Project.SettingsLocn.Type
+            Case ADVL_Utilities_Library_1.FileLocation.Types.Directory
+                txtSettingsLocationType.Text = "Directory"
+            Case ADVL_Utilities_Library_1.FileLocation.Types.Archive
+                txtSettingsLocationType.Text = "Archive"
+        End Select
+        txtSettingsLocationPath.Text = Project.SettingsLocn.Path
+        Select Case Project.DataLocn.Type
+            Case ADVL_Utilities_Library_1.FileLocation.Types.Directory
+                txtDataLocationType.Text = "Directory"
+            Case ADVL_Utilities_Library_1.FileLocation.Types.Archive
+                txtDataLocationType.Text = "Archive"
+        End Select
+        txtDataLocationPath.Text = Project.DataLocn.Path
+
+        sb.Append("------------------- Started OK ------------------------------------------------------------------------------------------------------------------------ " & vbCrLf & vbCrLf)
+        Me.Show() 'Show this form before showing the Message form
+        Message.Add(sb.ToString)
+
+
+
+
+
     End Sub
 
     Private Sub btnExit_Click(sender As Object, e As EventArgs) Handles btnExit.Click
@@ -724,8 +682,12 @@ Public Class Main
         ApplicationInfo.WriteFile()
         ApplicationInfo.UnlockApplication()
 
+        Project.SaveLastProjectInfo() 'Save information about the last project used.
+
         'Update the Project Information file: -----------------------------------------------
-        Project.SaveProjectInfoFile()
+        'Project.SaveProjectInfoFile() 'Update the Project Information file. This is not required unless there is a change made to the project.
+
+        Project.Usage.SaveUsageInfo() 'Save Project usage information.
 
         'Save Application Usage information: ------------------------------------------------
         ApplicationUsage.SaveUsageInfo()
@@ -738,19 +700,19 @@ Public Class Main
 
 #Region " Open and close forms - Code used to open and close other forms."
 
-    Private Sub btnUtilities_Click(sender As Object, e As EventArgs) Handles btnUtilities.Click
-        'Show the Utilities form:
-        If IsNothing(Utilities) Then
-            Utilities = New frmUtilities
-            Utilities.Show()
-        Else
-            Utilities.Show()
-        End If
-    End Sub
+    'Private Sub btnUtilities_Click(sender As Object, e As EventArgs) Handles btnUtilities.Click
+    '    'Show the Utilities form:
+    '    If IsNothing(Utilities) Then
+    '        Utilities = New frmUtilities
+    '        Utilities.Show()
+    '    Else
+    '        Utilities.Show()
+    '    End If
+    'End Sub
 
-    Private Sub Utilities_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Utilities.FormClosed
-        Utilities = Nothing
-    End Sub
+    'Private Sub Utilities_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Utilities.FormClosed
+    '    Utilities = Nothing
+    'End Sub
 
     Private Sub btnMessages_Click(sender As Object, e As EventArgs) Handles btnMessages.Click
         Message.ApplicationName = ApplicationInfo.Name
@@ -802,21 +764,26 @@ Public Class Main
                 'Result = client.Connect("CoordinatesClient")
                 'Result = client.Connect(ApplicationName, ServiceReference1.clsConnectionenumAppType.Application, False, False) 'Application Name is "CoordinatesClient"
                 'Result = client.Connect(ApplicationInfo.Name, ServiceReference1.clsConnectionenumAppType.Application, False, False) 'Application Name is "CoordinatesClient"
-                Result = client.Connect(ApplicationInfo.Name, ServiceReference1.clsConnectionAppTypes.Application, False, False) 'Application Name is "CoordinatesClient"
+                'Result = client.Connect(ApplicationInfo.Name, ServiceReference1.clsConnectionAppTypes.Application, False, False) 'Application Name is "CoordinatesClient"
+                ConnectionName = ApplicationInfo.Name 'This name will be modified if it is already used in an existing connection.
+                ConnectionName = client.Connect(ApplicationInfo.Name, ConnectionName, Project.Name, Project.DataLocn.Path, ServiceReference1.clsConnectionAppTypes.Application, False, False)
+
                 'appName, appType, getAllWarnings, getAllMessages
 
-                If Result = True Then
-                    Message.SetNormalStyle()
-                    'Message.Add("Connected to the Message Exchange as CoordinatesClient" & vbCrLf)
-                    Message.Add("Connected to the Application Network as " & ApplicationInfo.Name & vbCrLf)
-                    client.Endpoint.Binding.SendTimeout = New System.TimeSpan(1, 0, 0) 'Restore the send timeaout to 1 hour
-                    btnOnline.Text = "Online"
-                    btnOnline.ForeColor = Color.ForestGreen
-                    'ConnectedToExchange = True
-                    ConnectedToAppnet = True
-                    SendApplicationInfo()
-                Else
-                    Message.SetWarningStyle()
+                'If Result = True Then
+                If ConnectionName <> "" Then
+                        Message.SetNormalStyle()
+                        'Message.Add("Connected to the Message Exchange as CoordinatesClient" & vbCrLf)
+                        'Message.Add("Connected to the Application Network as " & ApplicationInfo.Name & vbCrLf)
+                        Message.Add("Connected to the Application Network as " & ConnectionName & vbCrLf)
+                        client.Endpoint.Binding.SendTimeout = New System.TimeSpan(1, 0, 0) 'Restore the send timeaout to 1 hour
+                        btnOnline.Text = "Online"
+                        btnOnline.ForeColor = Color.ForestGreen
+                        'ConnectedToExchange = True
+                        ConnectedToAppnet = True
+                        SendApplicationInfo()
+                    Else
+                        Message.SetWarningStyle()
                     'Message.Add("Connection to the Message Exchange failed!" & vbCrLf)
                     Message.Add("Connection to the Application Network failed!" & vbCrLf)
                     client.Endpoint.Binding.SendTimeout = New System.TimeSpan(1, 0, 0) 'Restore the send timeaout to 1 hour
@@ -844,7 +811,8 @@ Public Class Main
         If IsNothing(client) Then
             Message.Add("Already disconnected from the Application Network." & vbCrLf)
             btnOnline.Text = "Offline"
-            btnOnline.ForeColor = Color.Black
+            'btnOnline.ForeColor = Color.Black
+            btnOnline.ForeColor = Color.Red
             ConnectedToAppnet = False
         Else
             If client.State = ServiceModel.CommunicationState.Faulted Then
@@ -854,16 +822,18 @@ Public Class Main
                 Try
                     'client = New ServiceReference1.MsgServiceClient(New System.ServiceModel.InstanceContext(New MsgServiceCallback))
                     Message.Add("Running client.Disconnect(ApplicationName)   ApplicationName = " & ApplicationInfo.Name & vbCrLf)
-                    client.Disconnect(ApplicationInfo.Name) 'Error after period of no usage: An unhandled exception of type 'System.ServiceModel.CommunicationObjectFaultedException' occurred in mscorlib.dll   Additional information: The communication object, System.ServiceModel.Channels.ServiceChannel, cannot be used for communication because it is in the Faulted state.
+                    'client.Disconnect(ApplicationInfo.Name) 'Error after period of no usage: An unhandled exception of type 'System.ServiceModel.CommunicationObjectFaultedException' occurred in mscorlib.dll   Additional information: The communication object, System.ServiceModel.Channels.ServiceChannel, cannot be used for communication because it is in the Faulted state.
+                    client.Disconnect(ConnectionName) 'Error after period of no usage: An unhandled exception of type 'System.ServiceModel.CommunicationObjectFaultedException' occurred in mscorlib.dll   Additional information: The communication object, System.ServiceModel.Channels.ServiceChannel, cannot be used for communication because it is in the Faulted state.
                     btnOnline.Text = "Offline"
-                    btnOnline.ForeColor = Color.Black
+                    'btnOnline.ForeColor = Color.Black
+                    btnOnline.ForeColor = Color.Red
                     ConnectedToAppnet = False
                     'client.Close()
                 Catch ex As Exception
                     Message.SetWarningStyle()
                     Message.Add("Error disconnecting from Application Network: " & ex.Message & vbCrLf)
                 End Try
-             
+
             End If
         End If
     End Sub
@@ -936,11 +906,19 @@ Public Class Main
                 'client.SendMainNodeMessageAsync(doc.ToString) 'Send the application information to the Main Node.
                 'client.SendMessage("MessageExchange", doc.ToString)
 
-                Message.Color = Color.Red
-                Message.FontStyle = FontStyle.Bold
-                Message.XAdd("Application Info Message sent to Application Network" & vbCrLf)
-                Message.SetNormalStyle()
-                Message.XAdd(doc.ToString & vbCrLf & vbCrLf)
+                'Message.Color = Color.Red
+                'Message.FontStyle = FontStyle.Bold
+                'Message.XAdd("Application Info Message sent to Application Network" & vbCrLf)
+                'Message.SetNormalStyle()
+                'Message.XAdd(doc.ToString & vbCrLf & vbCrLf)
+
+                'Message.XAddText("Message sent to " & ClientAppName & ":" & vbCrLf, "XmlSentNotice")
+                Message.XAddText("Message sent to " & "ApplicationNetwork" & ":" & vbCrLf, "XmlSentNotice")
+
+
+                Message.XAddXml(doc.ToString)
+                'Message.XAddText(vbCrLf, "Message") 'Add extra line
+                Message.XAddText(vbCrLf, "Normal") 'Add extra line
 
                 client.SendMessage("ApplicationNetwork", doc.ToString)
             End If
@@ -991,8 +969,13 @@ Public Class Main
 
         Dim xmessage As New XElement("XMsg") 'This indicates the start of the message in the XMessage class
         'Dim clientName As New XElement("ClientName", "CoordinatesClient") 'This tells the coordinate server the name of the client making the request.
-        Dim clientName As New XElement("ClientName", ApplicationInfo.Name) 'This tells the coordinate server the name of the client making the request.
-        xmessage.Add(clientName)
+        'Dim clientName As New XElement("ClientName", ApplicationInfo.Name) 'This tells the coordinate server the name of the client making the request. '28-05-2018
+        'Dim connName As New XElement("ConnectionName", ConnectionName) 'This tells the coordinate server the name of the client making the request.
+        Dim connName As New XElement("ClientConnectionName", ConnectionName) 'This tells the coordinate server the connection name of the client making the request.
+        'xmessage.Add(clientName)
+        xmessage.Add(connName)
+        Dim clientLocn As New XElement("ClientLocn", "Angles") 'This tells the coordinates server the location within the client making the request. The reply will be sent to this location.
+        xmessage.Add(clientLocn)
 
         Dim operation As New XElement("ConvertAngle")
 
@@ -1026,48 +1009,57 @@ Public Class Main
                 Select Case cmbOutput.Text
                     Case "Degrees, Minutes, Seconds" 'Output angle in Dms
                         'When the coordinates server returns the converted angle, the angle components will be named OutputSign, OutputDegrees, OutputMinutes and OutputSeconds.
-                        Dim outputDmsSignName As New XElement("OutputDmsSignName", "OutputDmsSign")
-                        operation.Add(outputDmsSignName)
-                        Dim outputDmsDegreesName As New XElement("OutputDmsDegreesName", "OutputDmsDegrees")
-                        operation.Add(outputDmsDegreesName)
-                        Dim outputDmsMinutesName As New XElement("OutputDmsMinutesName", "OutputDmsMinutes")
-                        operation.Add(outputDmsMinutesName)
-                        Dim outputDmsSecondsName As New XElement("OutputDmsSecondsName", "OutputDmsSeconds")
-                        operation.Add(outputDmsSecondsName)
+                        'NOTE: ClientLocn value is now used to specify the destination location of the converted angle information.
+
+                        'Dim outputDmsSignName As New XElement("OutputDmsSignLocn", "OutputDmsSign")
+                        'operation.Add(outputDmsSignName)
+
+                        'Dim outputDmsDegreesName As New XElement("OutputDmsDegreesLocn", "OutputDmsDegrees")
+                        'operation.Add(outputDmsDegreesName)
+
+                        'Dim outputDmsMinutesName As New XElement("OutputDmsMinutesLocn", "OutputDmsMinutes")
+                        'operation.Add(outputDmsMinutesName)
+
+                        'Dim outputDmsSecondsName As New XElement("OutputDmsSecondsLocn", "OutputDmsSeconds")
+                        'operation.Add(outputDmsSecondsName)
                         Dim command As New XElement("Command", "ConvertDmsToDms")
                         operation.Add(command)
                     Case "Decimal Degrees" 'Output angle in decimal degrees
                         'When the coordinates server returns the converted angle, the angle will be named OutputDecimalDegrees.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputDecimalDegrees")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputDecimalDegrees")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertDmsToDecimalDegrees")
                         operation.Add(command)
                     Case "Sexagesimal Degrees" 'Output angle in sexagesimal degrees
                         'When the coordinates server returns the converted angle, the angle will be named OutputSexagesimalDegrees.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputSexagesimalDegrees")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputSexagesimalDegrees")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertDmsToSexagecimalDegrees")
                         operation.Add(command)
                     Case "Radians" 'Output angle in radians
                         Dim outputType As New XElement("Type", "Radians")
                         'When the coordinates server returns the converted angle, the angle will be named OutputRadians.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputRadians")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputRadians")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertDmsToRadians")
                         operation.Add(command)
                     Case "Gradians" 'Output angle in gradians
                         Dim outputType As New XElement("Type", "Gradians")
                         'When the coordinates server returns the converted angle, the angle will be named OutputGradians.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputGradians")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputGradians")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertDmsToGradians")
                         operation.Add(command)
                     Case "Turns" 'Output angle in turns
                         Dim outputType As New XElement("Type", "Turns")
                         'When the coordinates server returns the converted angle, the angle will be named OutputTurns.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputTurns")
-                        'outputAngle.Add(outputAngleName)
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputTurns")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertDmsToTurns")
                         operation.Add(command)
                 End Select
@@ -1077,44 +1069,53 @@ Public Class Main
                 Select Case cmbOutput.Text
                     Case "Degrees, Minutes, Seconds" 'Output angle is | Sign | Degrees | Minutes | Seconds |
                         'When the coordinates server returns the converted angle, the angle components will be named OutputSign, OutputDegrees, OutputMinutes and OutputSeconds.
-                        Dim outputDmsSignName As New XElement("OutputDmsSignName", "OutputDmsSign")
-                        operation.Add(outputDmsSignName)
-                        Dim outputDmsDegreesName As New XElement("OutputDmsDegreesName", "OutputDmsDegrees")
-                        operation.Add(outputDmsDegreesName)
-                        Dim outputDmsMinutesName As New XElement("OutputDmsMinutesName", "OutputDmsMinutes")
-                        operation.Add(outputDmsMinutesName)
-                        Dim outputDmsSecondsName As New XElement("OutputDmsSecondsName", "OutputDmsSeconds")
-                        operation.Add(outputDmsSecondsName)
+
+                        'Dim outputDmsSignName As New XElement("OutputDmsSignLocn", "OutputDmsSign")
+                        'operation.Add(outputDmsSignName)
+
+                        'Dim outputDmsDegreesName As New XElement("OutputDmsDegreesLocn", "OutputDmsDegrees")
+                        'operation.Add(outputDmsDegreesName)
+
+                        'Dim outputDmsMinutesName As New XElement("OutputDmsMinutesLocn", "OutputDmsMinutes")
+                        'operation.Add(outputDmsMinutesName)
+
+                        'Dim outputDmsSecondsName As New XElement("OutputDmsSecondsLocn", "OutputDmsSeconds")
+                        'operation.Add(outputDmsSecondsName)
                         Dim command As New XElement("Command", "ConvertDecimalDegreesToDms")
                         operation.Add(command)
                     Case "Decimal Degrees" 'Output angle in decimal degrees
                         'When the coordinates server returns the converted angle, the angle will be named OutputDecimalDegrees.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputDecimalDegrees")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputDecimalDegrees")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertDecimalDegreesToDecimalDegrees")
                         operation.Add(command)
                     Case "Sexagesimal Degrees" 'Output angle in sexagesimal degrees
                         'When the coordinates server returns the converted angle, the angle will be named OutputSexagesimalDegrees.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputSexagesimalDegrees")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputSexagesimalDegrees")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertDecimalDegreesToSexagesimalDegrees")
                         operation.Add(command)
                     Case "Radians"  'Output angle in radians
                         'When the coordinates server returns the converted angle, the angle will be named OutputRadians.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputRadians")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputRadians")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertDecimalDegreesToRadians")
                         operation.Add(command)
                     Case "Gradians"  'Output angle in gradians
                         'When the coordinates server returns the converted angle, the angle will be named OutputGradians.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputGradians")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputGradians")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertDecimalDegreesToGradians")
                         operation.Add(command)
                     Case "Turns" 'Output angle in turns
                         'When the coordinates server returns the converted angle, the angle will be named OutputTurns.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputTurns")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputTurns")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertDecimalDegreesToTurns")
                         operation.Add(command)
                 End Select
@@ -1123,44 +1124,53 @@ Public Class Main
                 operation.Add(inputAngle)
                 Select Case cmbOutput.Text
                     Case "Degrees, Minutes, Seconds" 'Output angle in DMS
-                        Dim outputDmsSignName As New XElement("OutputDmsSignName", "OutputDmsSign")
-                        operation.Add(outputDmsSignName)
-                        Dim outputDmsDegreesName As New XElement("OutputDmsDegreesName", "OutputDmsDegrees")
-                        operation.Add(outputDmsDegreesName)
-                        Dim outputDmsMinutesName As New XElement("OutputDmsMinutesName", "OutputDmsMinutes")
-                        operation.Add(outputDmsMinutesName)
-                        Dim outputDmsSecondsName As New XElement("OutputDmsSecondsName", "OutputDmsSeconds")
-                        operation.Add(outputDmsSecondsName)
+
+                        'Dim outputDmsSignName As New XElement("OutputDmsSignLocn", "OutputDmsSign")
+                        'operation.Add(outputDmsSignName)
+
+                        'Dim outputDmsDegreesName As New XElement("OutputDmsDegreesLocn", "OutputDmsDegrees")
+                        'operation.Add(outputDmsDegreesName)
+
+                        'Dim outputDmsMinutesName As New XElement("OutputDmsMinutesLocn", "OutputDmsMinutes")
+                        'operation.Add(outputDmsMinutesName)
+
+                        'Dim outputDmsSecondsName As New XElement("OutputDmsSecondsLocn", "OutputDmsSeconds")
+                        'operation.Add(outputDmsSecondsName)
                         Dim command As New XElement("Command", "ConvertSexagesimalDegreesToDms")
                         operation.Add(command)
                     Case "Decimal Degrees" 'Output angle in decimal degrees
                         'When the coordinates server returns the converted angle, the angle will be named OutputDecimalDegrees.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputDecimalDegrees")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputDecimalDegrees")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertSexagesimalDegreesToDecimalDegrees")
                         operation.Add(command)
                     Case "Sexagesimal Degrees" 'Output angle in sexagesimal degrees
                         'When the coordinates server returns the converted angle, the angle will be named OutputSexagesimalDegrees.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputSexagesimalDegrees")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputSexagesimalDegrees")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertSexagesimalDegreesToSexagesimalDegrees")
                         operation.Add(command)
                     Case "Radians" 'Output angle in radians
                         'When the coordinates server returns the converted angle, the angle will be named OutputRadians.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputRadians")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputRadians")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertSexagesimalDegreesToRadians")
                         operation.Add(command)
                     Case "Gradians" 'Output angle in radians
                         'When the coordinates server returns the converted angle, the angle will be named OutputGradians.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputGradians")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputGradians")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertSexagesimalDegreesToGradians")
                         operation.Add(command)
                     Case "Turns" 'Output angle in turns
                         'When the coordinates server returns the converted angle, the angle will be named OutputTurns.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputTurns")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputTurns")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertSexagesimalDegreesToTurns")
                         operation.Add(command)
                 End Select
@@ -1170,45 +1180,54 @@ Public Class Main
                 Select Case cmbOutput.Text
                     Case "Degrees, Minutes, Seconds"  'Output angle in DMS
                         'When the coordinates server returns the converted angle, the angle components will be named OutputSign, OutputDegrees, OutputMinutes and OutputSeconds.
-                        Dim outputDmsSignName As New XElement("OutputDmsSignName", "OutputDmsSign")
-                        operation.Add(outputDmsSignName)
-                        Dim outputDmsDegreesName As New XElement("OutputDmsDegreesName", "OutputDmsDegrees")
-                        operation.Add(outputDmsDegreesName)
-                        Dim outputDmsMinutesName As New XElement("OutputDmsMinutesName", "OutputDmsMinutes")
-                        operation.Add(outputDmsMinutesName)
-                        Dim outputDmsSecondsName As New XElement("OutputDmsSecondsName", "OutputDmsSeconds")
-                        operation.Add(outputDmsSecondsName)
+
+                        'Dim outputDmsSignName As New XElement("OutputDmsSignLocn", "OutputDmsSign")
+                        'operation.Add(outputDmsSignName)
+
+                        'Dim outputDmsDegreesName As New XElement("OutputDmsDegreesLocn", "OutputDmsDegrees")
+                        'operation.Add(outputDmsDegreesName)
+
+                        'Dim outputDmsMinutesName As New XElement("OutputDmsMinutesLocn", "OutputDmsMinutes")
+                        'operation.Add(outputDmsMinutesName)
+
+                        'Dim outputDmsSecondsName As New XElement("OutputDmsSecondsLocn", "OutputDmsSeconds")
+                        'operation.Add(outputDmsSecondsName)
                         Dim command As New XElement("Command", "ConvertRadiansToDms")
                         operation.Add(command)
                     Case "Decimal Degrees" 'Output angle in decimal degrees
                         'When the coordinates server returns the converted angle, the angle will be named OutputDecimalDegrees.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputDecimalDegrees")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputDecimalDegrees")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertRadiansToDecimalDegrees")
                         operation.Add(command)
                     Case "Sexagesimal Degrees" 'Output angle in sexagesimal degrees
                         'When the coordinates server returns the converted angle, the angle will be named OutputSexagesimalDegrees.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputSexagesimalDegrees")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputSexagesimalDegrees")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertRadiansToSexagesimalDegrees")
                         operation.Add(command)
                     Case "Radians" 'Output angle in radians
                         'When the coordinates server returns the converted angle, the angle will be named OutputRadians.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputRadians")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputRadians")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertRadiansToRadians")
                         operation.Add(command)
                     Case "Gradians"  'Output angle in gradians
                         Dim outputType As New XElement("Type", "Gradians")
                         'When the coordinates server returns the converted angle, the angle will be named OutputGradians.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputGradians")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputGradians")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertRadiansToGradians")
                         operation.Add(command)
                     Case "Turns"  'Output angle in turns
                         'When the coordinates server returns the converted angle, the angle will be named OutputTurns.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputTurns")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputTurns")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertRadiansToTurns")
                         operation.Add(command)
                 End Select
@@ -1218,44 +1237,53 @@ Public Class Main
                 Select Case cmbOutput.Text
                     Case "Degrees, Minutes, Seconds"  'Output angle in DMS
                         ''When the coordinates server returns the converted angle, the angle components will be named OutputSign, OutputDegrees, OutputMinutes and OutputSeconds.
-                        Dim outputDmsSignName As New XElement("OutputDmsSignName", "OutputDmsSign")
-                        operation.Add(outputDmsSignName)
-                        Dim outputDmsDegreesName As New XElement("OutputDmsDegreesName", "OutputDmsDegrees")
-                        operation.Add(outputDmsDegreesName)
-                        Dim outputDmsMinutesName As New XElement("OutputDmsMinutesName", "OutputDmsMinutes")
-                        operation.Add(outputDmsMinutesName)
-                        Dim outputDmsSecondsName As New XElement("OutputDmsSecondsName", "OutputDmsSeconds")
-                        operation.Add(outputDmsSecondsName)
+
+                        'Dim outputDmsSignName As New XElement("OutputDmsSignLocn", "OutputDmsSign")
+                        'operation.Add(outputDmsSignName)
+
+                        'Dim outputDmsDegreesName As New XElement("OutputDmsDegreesLocn", "OutputDmsDegrees")
+                        'operation.Add(outputDmsDegreesName)
+
+                        'Dim outputDmsMinutesName As New XElement("OutputDmsMinutesLocn", "OutputDmsMinutes")
+                        'operation.Add(outputDmsMinutesName)
+
+                        'Dim outputDmsSecondsName As New XElement("OutputDmsSecondsLocn", "OutputDmsSeconds")
+                        'operation.Add(outputDmsSecondsName)
                         Dim command As New XElement("Command", "ConvertGradiansToDms")
                         operation.Add(command)
                     Case "Decimal Degrees" 'Output angle in decimal degrees
                         'When the coordinates server returns the converted angle, the angle will be named OutputDecimalDegrees.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputDecimalDegrees")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputDecimalDegrees")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertGradiansToDecimalDegrees")
                         operation.Add(command)
                     Case "Sexagesimal Degrees"  'Output angle in sexagesimal degrees
                         'When the coordinates server returns the converted angle, the angle will be named OutputSexagesimalDegrees.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputSexagesimalDegrees")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputSexagesimalDegrees")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertGradiansToSexagesimalDegrees")
                         operation.Add(command)
                     Case "Radians"  'Output angle in radians
                         'When the coordinates server returns the converted angle, the angle will be named OutputRadians.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputRadians")
+
+                        Dim outputAngleName As New XElement("OutputAngleLocn", "OutputRadians")
                         operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertGradiansToRadians")
                         operation.Add(command)
                     Case "Gradians"  'Output angle in gradians
                         'When the coordinates server returns the converted angle, the angle will be named OutputGradians.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputGradians")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputGradians")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertGradiansToGradians")
                         operation.Add(command)
                     Case "Turns"  'Output angle in turns
                         'When the coordinates server returns the converted angle, the angle will be named OutputTurns.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputTurns")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputTurns")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertGradiansToTurns")
                         operation.Add(command)
                 End Select
@@ -1266,44 +1294,53 @@ Public Class Main
                 Select Case cmbOutput.Text
                     Case "Degrees, Minutes, Seconds" 'Output angle in DMS
                         ''When the coordinates server returns the converted angle, the angle components will be named OutputSign, OutputDegrees, OutputMinutes and OutputSeconds.
-                        Dim outputDmsSignName As New XElement("OutputDmsSignName", "OutputDmsSign")
-                        operation.Add(outputDmsSignName)
-                        Dim outputDmsDegreesName As New XElement("OutputDmsDegreesName", "OutputDmsDegrees")
-                        operation.Add(outputDmsDegreesName)
-                        Dim outputDmsMinutesName As New XElement("OutputDmsMinutesName", "OutputDmsMinutes")
-                        operation.Add(outputDmsMinutesName)
-                        Dim outputDmsSecondsName As New XElement("OutputDmsSecondsName", "OutputDmsSeconds")
-                        operation.Add(outputDmsSecondsName)
+
+                        'Dim outputDmsSignName As New XElement("OutputDmsSignLocn", "OutputDmsSign")
+                        'operation.Add(outputDmsSignName)
+
+                        'Dim outputDmsDegreesName As New XElement("OutputDmsDegreesLocn", "OutputDmsDegrees")
+                        'operation.Add(outputDmsDegreesName)
+
+                        'Dim outputDmsMinutesName As New XElement("OutputDmsMinutesLocn", "OutputDmsMinutes")
+                        'operation.Add(outputDmsMinutesName)
+
+                        'Dim outputDmsSecondsName As New XElement("OutputDmsSecondsLocn", "OutputDmsSeconds")
+                        'operation.Add(outputDmsSecondsName)
                         Dim command As New XElement("Command", "ConvertTurnsToDms")
                         operation.Add(command)
                     Case "Decimal Degrees" 'Output angle in decimal degrees
                         'When the coordinates server returns the converted angle, the angle will be named OutputDecimalDegrees.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputDecimalDegrees")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputDecimalDegrees")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertTurnsToDecimalDegrees")
                         operation.Add(command)
                     Case "Sexagesimal Degrees" 'Output angle in sexagesimal degrees
                         'When the coordinates server returns the converted angle, the angle will be named OutputSexagesimalDegrees.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputSexagesimalDegrees")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputSexagesimalDegrees")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertTurnsToDecimalDegrees")
                         operation.Add(command)
                     Case "Radians" 'Output angle in radians
                         'When the coordinates server returns the converted angle, the angle will be named OutputRadians.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputRadians")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputRadians")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertTurnsToRadians")
                         operation.Add(command)
                     Case "Gradians" 'Output angle in gradians
                         'When the coordinates server returns the converted angle, the angle will be named OutputGradians.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputGradians")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputGradians")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertTurnsToGradians")
                         operation.Add(command)
                     Case "Turns"  'Output angle in turns
                         'When the coordinates server returns the converted angle, the angle will be named OutputTurns.
-                        Dim outputAngleName As New XElement("OutputAngleName", "OutputTurns")
-                        operation.Add(outputAngleName)
+
+                        'Dim outputAngleName As New XElement("OutputAngleLocn", "OutputTurns")
+                        'operation.Add(outputAngleName)
                         Dim command As New XElement("Command", "ConvertTurnsToTurns")
                         operation.Add(command)
                 End Select
@@ -1314,42 +1351,25 @@ Public Class Main
         doc.Add(xmessage)
 
         'Send the message.
-        'The message text to send is in the rich text box is rtbMessageToSend.
-        'The name of the destination application is in the txtDestination text box.
-
-        'To send a message to the Message Exchange application, use the destination "MessageExchange"
 
         If IsNothing(client) Then
-            'rtbMessagesReceived.AppendText("No client connection available!" & vbCrLf)
             Message.Add("No client connection available!" & vbCrLf)
         Else
             If client.State = ServiceModel.CommunicationState.Faulted Then
-                'rtbMessagesReceived.AppendText("client state is faulted. Messge not sent!" & vbCrLf)
                 Message.Add("client state is faulted. Message not sent!" & vbCrLf)
-                'Dim StateFlag As System.Enum
-                'Dim StateHasFlag As Boolean
-                'StateHasFlag = client.State.HasFlag(StateFlag)
             Else
-
-                'client.SendMessageAsync("CoordinatesServer", doc.ToString)
-                'client.SendMessageAsync("ADVL_Coordinates", doc.ToString)
                 client.SendMessageAsync("ADVL_Coordinates_1", doc.ToString)
-
-                ''Check is the Messages form is open:
-                'If IsNothing(Messages) Then
-                '    Messages = New frmMessages
-                '    Messages.Show()
-                '    Messages.rtbInstructionsSent.Text = doc.ToString & vbCrLf
-                'Else
-                '    Messages.Show()
-                '    Messages.rtbInstructionsSent.Text = doc.ToString & vbCrLf
-                'End If
-                Message.Color = Color.Red
-                Message.FontStyle = FontStyle.Bold
-                'Message.XAdd("Message sent to " & "ADVL_Coordinates" & ":" & vbCrLf)
-                Message.XAdd("Message sent to " & "ADVL_Coordinates_1" & ":" & vbCrLf)
-                Message.SetNormalStyle()
-                Message.XAdd(doc.ToString & vbCrLf & vbCrLf)
+                'Message.Color = Color.Red
+                'Message.FontStyle = FontStyle.Bold
+                'Message.XAdd("Message sent to " & "ADVL_Coordinates_1" & ":" & vbCrLf)
+                'Message.SetNormalStyle()
+                'Message.XAdd(doc.ToString & vbCrLf & vbCrLf)
+                'Message.XAddText("Message sent to " & ClientAppName & ":" & vbCrLf, "XmlSentNotice")
+                'Message.XAddText("Message sent to " & ClientConnName & ":" & vbCrLf, "XmlSentNotice")
+                Message.XAddText("Message sent to " & "ADVL_Coordinates_1" & ":" & vbCrLf, "XmlSentNotice")
+                Message.XAddXml(doc.ToString)
+                'Message.XAddText(vbCrLf, "Message") 'Add extra line
+                Message.XAddText(vbCrLf, "Normal") 'Add extra line
 
             End If
         End If
@@ -1367,6 +1387,9 @@ Public Class Main
         'Dim clientName As New XElement("ClientName", "CoordinatesClient") 'This tells the coordinate server the name of the client making the request.
         Dim clientName As New XElement("ClientName", ApplicationInfo.Name) 'This tells the coordinate server the name of the client making the request.
         xmessage.Add(clientName)
+        Dim clientLocn As New XElement("ClientLocn", "Projections") 'This tells the coordinates server the location within the client making the request. The reply will be sent to this location.
+        xmessage.Add(clientLocn)
+
         Dim operation As New XElement("Command", "GetProjectedCrsList") 'This tells the coordinate server to reply with the list of projected coordinate reference systems
         xmessage.Add(operation)
 
@@ -1383,12 +1406,16 @@ Public Class Main
                 'client.SendMessageAsync("ADVL_Coordinates", doc.ToString)
                 client.SendMessageAsync("ADVL_Coordinates_1", doc.ToString)
 
-                Message.Color = Color.Red
-                Message.FontStyle = FontStyle.Bold
-                'Message.XAdd("Message sent to " & "ADVL_Coordinates" & ":" & vbCrLf)
-                Message.XAdd("Message sent to " & "ADVL_Coordinates_1" & ":" & vbCrLf)
-                Message.SetNormalStyle()
-                Message.XAdd(doc.ToString & vbCrLf & vbCrLf)
+                'Message.Color = Color.Red
+                'Message.FontStyle = FontStyle.Bold
+                ''Message.XAdd("Message sent to " & "ADVL_Coordinates" & ":" & vbCrLf)
+                'Message.XAdd("Message sent to " & "ADVL_Coordinates_1" & ":" & vbCrLf)
+                'Message.SetNormalStyle()
+                'Message.XAdd(doc.ToString & vbCrLf & vbCrLf)
+                'Message.XAddText("Message sent to " & ClientAppName & ":" & vbCrLf, "XmlSentNotice")
+                Message.XAddText("Message sent to " & ClientConnName & ":" & vbCrLf, "XmlSentNotice")
+                Message.XAddXml(doc.ToString)
+                Message.XAddText(vbCrLf, "Normal") 'Add extra line
 
             End If
         End If
@@ -2145,8 +2172,13 @@ Public Class Main
 
         Dim xmessage As New XElement("XMsg") 'This indicates the start of the message in the XMessage class
         'Dim clientName As New XElement("ClientName", "CoordinatesClient") 'This tells the coordinate server the name of the client making the request.
-        Dim clientName As New XElement("ClientName", ApplicationInfo.Name) 'This tells the coordinate server the name of the client making the request.
-        xmessage.Add(clientName)
+        'Dim clientName As New XElement("ClientName", ApplicationInfo.Name) 'This tells the coordinate server the name of the client making the request.
+        'xmessage.Add(clientName)
+        Dim connName As New XElement("ClientConnectionName", ConnectionName) 'This tells the coordinate server the name of the client making the request.
+        xmessage.Add(connName)
+        Dim clientLocn As New XElement("ClientLocn", "Projections") 'This tells the coordinates server the location within the client making the request. The reply will be sent to this location.
+        xmessage.Add(clientLocn)
+
         Dim operation As New XElement("ConvertProjectedCoordinates")
 
         Dim projectedCRS As New XElement("ProjectedCRS", cmbProjectedCRS.Text)
@@ -2340,7 +2372,8 @@ Public Class Main
 
         Select Case cmbProjnOutput.Text
             Case "Latitude, Longitude"
-                Dim Type As New XElement("OType", "Geographic")
+                'Dim Type As New XElement("OType", "Geographic")
+                Dim Type As New XElement("Type", "Geographic")
                 outputCoordinates.Add(Type)
                 Select Case cmbProjnOutputUnits.Text
                     Case "Degrees, Minutes, Seconds"
@@ -2470,54 +2503,62 @@ Public Class Main
                 'client.SendMessageAsync("ADVL_Coordinates", doc.ToString)
                 client.SendMessageAsync("ADVL_Coordinates_1", doc.ToString)
 
-                Message.Color = Color.Red
-                Message.FontStyle = FontStyle.Bold
-                'Message.XAdd("Message sent to " & "ADVL_Coordinates" & ":" & vbCrLf)
-                Message.XAdd("Message sent to " & "ADVL_Coordinates_1" & ":" & vbCrLf)
-                Message.SetNormalStyle()
-                Message.XAdd(doc.ToString & vbCrLf & vbCrLf)
-            End If
-        End If
-    End Sub
+                'Message.Color = Color.Red
+                'Message.FontStyle = FontStyle.Bold
+                ''Message.XAdd("Message sent to " & "ADVL_Coordinates" & ":" & vbCrLf)
+                'Message.XAdd("Message sent to " & "ADVL_Coordinates_1" & ":" & vbCrLf)
+                'Message.SetNormalStyle()
+                'Message.XAdd(doc.ToString & vbCrLf & vbCrLf)
 
-    Private Sub btnConnectionTest_Click(sender As Object, e As EventArgs) Handles btnConnectionTest.Click
-        'Test the connection
+                'Message.XAddText("Message sent to " & ClientAppName & ":" & vbCrLf, "XmlSentNotice")
+                Message.XAddText("Message sent to " & "ADVL_Coordinates_1" & ":" & vbCrLf, "XmlSentNotice")
 
-        If IsNothing(client) Then
-            'client = New ServiceReference1.MsgServiceClient(New System.ServiceModel.InstanceContext(New MsgServiceCallback))
-            txtConnectionTest.Text = "Connection has not been created."
-        Else
-            Message.Add("client.State.ToString: " & client.State.ToString & vbCrLf)
-            Message.Add("client.InnerChannel.State: " & client.InnerChannel.State & vbCrLf)
-            Message.Add("client.Endpoint.Binding.ToString: " & client.Endpoint.Binding.ToString & vbCrLf)
-            Message.Add("client.Endpoint.Address.ToString: " & client.Endpoint.Address.ToString & vbCrLf)
-            'ServiceReference1.MsgServiceClient.
-            Message.Add("client.InnerDuplexChannel.State.ToString: " & client.InnerDuplexChannel.State.ToString & vbCrLf)
-            Message.Add("client.State.ToString: " & client.State.ToString & vbCrLf)
-            Message.Add("client.ClientCredentials.ToString: " & client.ClientCredentials.ToString & vbCrLf)
-
-            If client.State = ServiceModel.CommunicationState.Faulted Then
-                txtConnectionTest.Text = "Connection state is faulted."
-            Else
-                txtConnectionTest.Text = "Testing connection..."
-                client.Endpoint.Binding.SendTimeout = New System.TimeSpan(0, 0, 2) 'Temporarily set the send timeaout to 2 seconds
-                client.Endpoint.Binding.ReceiveTimeout = New System.TimeSpan(0, 0, 2) 'Temporarily set the send timeaout to 2 seconds
-                client.Endpoint.Binding.OpenTimeout = New System.TimeSpan(0, 0, 2) 'Temporarily set the send timeaout to 2 seconds
-                client.Endpoint.Binding.CloseTimeout = New System.TimeSpan(0, 0, 2) 'Temporarily set the send timeaout to 2 seconds
-                'client.Endpoint.Binding.
-                'client.
-
-                Try
-                    If client.IsAlive Then
-                        txtConnectionTest.Text = "Connection is OK."
-                    End If
-                Catch ex As Exception
-                    Message.Add("Error: " & ex.Message & vbCrLf)
-                End Try
+                Message.XAddXml(doc.ToString)
+                'Message.XAddText(vbCrLf, "Message") 'Add extra line
+                Message.XAddText(vbCrLf, "Normal") 'Add extra line
 
             End If
         End If
     End Sub
+
+    'Private Sub btnConnectionTest_Click(sender As Object, e As EventArgs) Handles btnConnectionTest.Click
+    '    'Test the connection
+
+    '    If IsNothing(client) Then
+    '        'client = New ServiceReference1.MsgServiceClient(New System.ServiceModel.InstanceContext(New MsgServiceCallback))
+    '        txtConnectionTest.Text = "Connection has not been created."
+    '    Else
+    '        Message.Add("client.State.ToString: " & client.State.ToString & vbCrLf)
+    '        Message.Add("client.InnerChannel.State: " & client.InnerChannel.State & vbCrLf)
+    '        Message.Add("client.Endpoint.Binding.ToString: " & client.Endpoint.Binding.ToString & vbCrLf)
+    '        Message.Add("client.Endpoint.Address.ToString: " & client.Endpoint.Address.ToString & vbCrLf)
+    '        'ServiceReference1.MsgServiceClient.
+    '        Message.Add("client.InnerDuplexChannel.State.ToString: " & client.InnerDuplexChannel.State.ToString & vbCrLf)
+    '        Message.Add("client.State.ToString: " & client.State.ToString & vbCrLf)
+    '        Message.Add("client.ClientCredentials.ToString: " & client.ClientCredentials.ToString & vbCrLf)
+
+    '        If client.State = ServiceModel.CommunicationState.Faulted Then
+    '            txtConnectionTest.Text = "Connection state is faulted."
+    '        Else
+    '            txtConnectionTest.Text = "Testing connection..."
+    '            client.Endpoint.Binding.SendTimeout = New System.TimeSpan(0, 0, 2) 'Temporarily set the send timeaout to 2 seconds
+    '            client.Endpoint.Binding.ReceiveTimeout = New System.TimeSpan(0, 0, 2) 'Temporarily set the send timeaout to 2 seconds
+    '            client.Endpoint.Binding.OpenTimeout = New System.TimeSpan(0, 0, 2) 'Temporarily set the send timeaout to 2 seconds
+    '            client.Endpoint.Binding.CloseTimeout = New System.TimeSpan(0, 0, 2) 'Temporarily set the send timeaout to 2 seconds
+    '            'client.Endpoint.Binding.
+    '            'client.
+
+    '            Try
+    '                If client.IsAlive Then
+    '                    txtConnectionTest.Text = "Connection is OK."
+    '                End If
+    '            Catch ex As Exception
+    '                Message.Add("Error: " & ex.Message & vbCrLf)
+    '            End Try
+
+    '        End If
+    '    End If
+    'End Sub
 
     Private Sub btnNameFind_Click(sender As Object, e As EventArgs) Handles btnNameFind.Click
         'Find the first record with specified text contained within the Name field.
@@ -2555,6 +2596,10 @@ Public Class Main
 
     End Sub
 
+    Private Sub btnProject_Click(sender As Object, e As EventArgs) Handles btnProject.Click
+        Project.SelectProject()
+    End Sub
+
 
 #Region "Run XMessage Statements"
 
@@ -2572,38 +2617,61 @@ Public Class Main
 
         'CODE UPDATES: Angle conversions are now done on the Main form instead of the Utilities form.
         Select Case Locn
-            Case "ConvertedAngle:OutputDecimalDegrees"
+            Case "Main"
+                'No instructions - do nothing
+
+            'Case "ConvertedAngle:OutputDecimalDegrees"
+            'Case "Angles:ConvertedAngle:OutputDecimalDegrees"
+            Case "Angles:ConvertedAngle:DecimalDegrees"
                 'Utilities.txtOutputAngle.Text = Prop
                 txtOutputAngle.Text = Info
-            Case "ConvertedAngle:OutputSexagesimalDegrees"
+            'Case "ConvertedAngle:OutputSexagesimalDegrees"
+            'Case "Angles:ConvertedAngle:OutputSexagesimalDegrees"
+            Case "Angles:ConvertedAngle:SexagesimalDegrees"
                 'Utilities.txtOutputAngle.Text = Prop
                 txtOutputAngle.Text = Info
-            Case "ConvertedAngle:OutputDmsSign"
+            'Case "ConvertedAngle:OutputDmsSign"
+            'Case "Angles:ConvertedAngle:OutputDmsSign"
+            Case "Angles:ConvertedAngle:DmsSign"
                 'Utilities.txtOutputSign.Text = Prop
                 txtOutputSign.Text = Info
-            Case "ConvertedAngle:OutputDmsDegrees"
+            'Case "ConvertedAngle:OutputDmsDegrees"
+            'Case "Angles:ConvertedAngle:OutputDmsDegrees"
+            Case "Angles:ConvertedAngle:DmsDegrees"
                 'Utilities.txtOutputDegrees.Text = Prop
                 txtOutputDegrees.Text = Info
-            Case "ConvertedAngle:OutputDmsMinutes"
+            'Case "ConvertedAngle:OutputDmsMinutes"
+            'Case "Angles:ConvertedAngle:OutputDmsMinutes"
+            Case "Angles:ConvertedAngle:DmsMinutes"
                 'Utilities.txtOutputMinutes.Text = Prop
                 txtOutputMinutes.Text = Info
-            Case "ConvertedAngle:OutputDmsSeconds"
+            'Case "ConvertedAngle:OutputDmsSeconds"
+            'Case "Angles:ConvertedAngle:OutputDmsSeconds"
+            Case "Angles:ConvertedAngle:DmsSeconds"
                 'Utilities.txtOutputSeconds.Text = Prop
                 txtOutputSeconds.Text = Info
-            Case "ConvertedAngle:OutputRadians"
+            'Case "ConvertedAngle:OutputRadians"
+            'Case "Angles:ConvertedAngle:OutputRadians"
+            Case "Angles:ConvertedAngle:Radians"
                 'Utilities.txtOutputAngle.Text = Prop
                 txtOutputAngle.Text = Info
-            Case "ConvertedAngle:OutputGradians"
+            'Case "ConvertedAngle:OutputGradians"
+            'Case "Angles:ConvertedAngle:OutputGradians"
+            Case "Angles:ConvertedAngle:Gradians"
                 'Utilities.txtOutputAngle.Text = Prop
                 txtOutputAngle.Text = Info
-            Case "ConvertedAngle:OutputTurns"
+            'Case "ConvertedAngle:OutputTurns"
+            'Case "Angles:ConvertedAngle:OutputTurns"
+            Case "Angles:ConvertedAngle:Turns"
                 'Utilities.txtOutputAngle.Text = Prop
                 txtOutputAngle.Text = Info
-            Case "ProjectedCrsList:ProjectedCrsName"
+            'Case "ProjectedCrsList:ProjectedCrsName"
+            Case "Projections:ProjectedCrsList:ProjectedCrsName"
                 'Utilities.cmbProjectedCRS.Items.Add(Prop)
                 cmbProjectedCRS.Items.Add(Info)
 
-            Case "TransformedCoordinates:OutputEasting"
+            'Case "TransformedCoordinates:OutputEasting"
+            Case "Projections:TransformedCoordinates:OutputEasting"
                 Select Case cmbProjnOutput.Text
                     Case "Easting, Northing"
                         txtOutput1.Text = Info
@@ -2611,7 +2679,8 @@ Public Class Main
                         txtOutput2.Text = Info
                 End Select
 
-            Case "TransformedCoordinates:OutputNorthing"
+            'Case "TransformedCoordinates:OutputNorthing"
+            Case "Projections:TransformedCoordinates:OutputNorthing"
                 Select Case cmbProjnOutput.Text
                     Case "Easting, Northing"
                         txtOutput2.Text = Info
@@ -2642,7 +2711,8 @@ Public Class Main
             Case "EndOfSequence"
 
             Case Else
-                Message.Add("Instruction not recognised:  " & Locn & "    Property:  " & Info & vbCrLf)
+                'Message.Add("Instruction not recognised:  " & Locn & "    Property:  " & Info & vbCrLf)
+                Message.Add("Instruction not recognised. Location:  " & Locn & "    Information:  " & Info & vbCrLf)
 
         End Select
 
@@ -2682,12 +2752,19 @@ Public Class Main
             Else
                 Try
                     Message.Add("Sending a message. Number of characters: " & MessageText.Length & vbCrLf)
-                    client.SendMessage(MessageDest, MessageText)
-                    Message.XAdd(MessageText & vbCrLf)
+                    'client.SendMessage(MessageDest, MessageText)
+                    'client.SendMessage(ClientAppName, MessageText)
+                    client.SendMessage(ClientConnName, MessageText)
+                    'Message.XAdd(MessageText & vbCrLf)
+
                     MessageText = "" 'Clear the message after it has been sent.
+                    'ClientAppName = "" 'Clear the Client Application Name after the message has been sent.
+                    ClientConnName = "" 'Clear the Client Application Name after the message has been sent.
+                    ClientAppLocn = "" 'Clear the Client Application Location after the message has been sent.
                 Catch ex As Exception
-                    Message.SetWarningStyle()
-                    Message.Add("Error sending message: " & ex.Message & vbCrLf)
+                    'Message.SetWarningStyle()
+                    'Message.Add("Error sending message: " & ex.Message & vbCrLf)
+                    Message.AddWarning("Error sending message: " & ex.Message & vbCrLf)
                 End Try
             End If
         End If
@@ -2696,25 +2773,97 @@ Public Class Main
         Timer1.Enabled = False
     End Sub
 
+
+
+
+
+
+
+
+
 #End Region 'Process XMessages
+
+    Private Sub Project_Selected() Handles Project.Selected
+        'A new project has been selected.
+
+        Message.Add(vbCrLf & "New Project Opening: Project name: " & Project.Name & vbCrLf)
+        Message.Add("Settings path: " & Project.SettingsLocn.Path & vbCrLf)
+        Message.Add("Restoring form settings." & vbCrLf)
+
+        RestoreFormSettings()
+        'Project.ReadProjectInfoFile() 'This is done when the project is selected
+        Project.Usage.StartTime = Now
+
+        ApplicationInfo.SettingsLocn = Project.SettingsLocn
+        Message.SettingsLocn = Project.SettingsLocn
+
+        'Restore the new project settings:
+        RestoreProjectSettings() 'Update this subroutine if project settings need to be restored.
+
+        'Show the project information:
+        txtProjectName.Text = Project.Name
+        txtProjectDescription.Text = Project.Description
+        Select Case Project.Type
+            Case ADVL_Utilities_Library_1.Project.Types.Directory
+                txtProjectType.Text = "Directory"
+            Case ADVL_Utilities_Library_1.Project.Types.Archive
+                txtProjectType.Text = "Archive"
+            Case ADVL_Utilities_Library_1.Project.Types.Hybrid
+                txtProjectType.Text = "Hybrid"
+            Case ADVL_Utilities_Library_1.Project.Types.None
+                txtProjectType.Text = "None"
+        End Select
+
+        txtCreationDate.Text = Format(Project.CreationDate, "d-MMM-yyyy H:mm:ss")
+        txtLastUsed.Text = Format(Project.Usage.LastUsed, "d-MMM-yyyy H:mm:ss")
+        Select Case Project.SettingsLocn.Type
+            Case ADVL_Utilities_Library_1.FileLocation.Types.Directory
+                txtSettingsLocationType.Text = "Directory"
+            Case ADVL_Utilities_Library_1.FileLocation.Types.Archive
+                txtSettingsLocationType.Text = "Archive"
+        End Select
+        txtSettingsLocationPath.Text = Project.SettingsLocn.Path
+        Select Case Project.DataLocn.Type
+            Case ADVL_Utilities_Library_1.FileLocation.Types.Directory
+                txtDataLocationType.Text = "Directory"
+            Case ADVL_Utilities_Library_1.FileLocation.Types.Archive
+                txtDataLocationType.Text = "Archive"
+        End Select
+        txtDataLocationPath.Text = Project.DataLocn.Path
+    End Sub
+
+    Private Sub Project_Closing() Handles Project.Closing
+        'The current project is closing.
+        Message.Add(vbCrLf & "Current Project Closing: Project name: " & Project.Name & vbCrLf)
+        Message.Add("Settings path: " & Project.SettingsLocn.Path & vbCrLf)
+        Message.Add("Saving form settings." & vbCrLf)
+
+        SaveFormSettings() 'Save the form settings - they are saved in the Project before is closes.
+        'SaveProjectSettings() 'Update this subroutine if project settings need to be saved.
+
+        'Save the current project usage information:
+        Project.Usage.SaveUsageInfo()
+    End Sub
+
+    Private Sub Project_ErrorMessage(Msg As String) Handles Project.ErrorMessage
+        'Display the Project error message:
+        'Message.SetWarningStyle()
+        'Message.Add(Msg & vbCrLf)
+        'Message.SetNormalStyle()
+        Message.AddWarning(Msg & vbCrLf)
+    End Sub
+
+    Private Sub Project_Message(Msg As String) Handles Project.Message
+        'Display the Project message:
+        Message.Add(Msg & vbCrLf)
+    End Sub
+
+    Private Sub ApplicationInfo_UpdateExePath() Handles ApplicationInfo.UpdateExePath
+        'Update the Executable Path.
+        ApplicationInfo.ExecutablePath = Application.ExecutablePath
+    End Sub
 
 #End Region 'Form Methods - The main actions performed by this form.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-End Class
+End Class 'Main

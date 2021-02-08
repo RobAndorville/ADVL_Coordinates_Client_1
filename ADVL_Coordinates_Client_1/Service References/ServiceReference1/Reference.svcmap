@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="efb56e95-ee45-4737-bf02-ea7829456cc5" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
+<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="c617d611-bf30-45a0-afd8-d2cc4c4c3459" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
   <ClientOptions>
     <GenerateAsynchronousMethods>false</GenerateAsynchronousMethods>
     <GenerateTaskBasedAsynchronousMethod>true</GenerateTaskBasedAsynchronousMethod>
@@ -19,14 +19,14 @@
     <ServiceContractMappings />
   </ClientOptions>
   <MetadataSources>
-    <MetadataSource Address="http://localhost:8080/hello" Protocol="http" SourceId="1" />
+    <MetadataSource Address="http://localhost:8733/ADVLService" Protocol="http" SourceId="1" />
   </MetadataSources>
   <Metadata>
-    <MetadataFile FileName="hello.xsd" MetadataType="Schema" ID="96150dd8-39b0-4ea1-a22e-0627198c3e01" SourceId="1" SourceUrl="http://localhost:8080/hello?xsd=xsd2" />
-    <MetadataFile FileName="hello1.xsd" MetadataType="Schema" ID="2ef2b287-ab12-4f2f-99d8-cfcd264491bf" SourceId="1" SourceUrl="http://localhost:8080/hello?xsd=xsd1" />
-    <MetadataFile FileName="MsgService.wsdl" MetadataType="Wsdl" ID="628d298b-fb57-4087-97ef-a4f858ec46d2" SourceId="1" SourceUrl="http://localhost:8080/hello?wsdl" />
-    <MetadataFile FileName="hello.disco" MetadataType="Disco" ID="b3554fd1-3079-4261-be93-9f85c94c3318" SourceId="1" SourceUrl="http://localhost:8080/hello?disco" />
-    <MetadataFile FileName="hello2.xsd" MetadataType="Schema" ID="534f5ad4-fad8-40a0-9287-48333dc558a5" SourceId="1" SourceUrl="http://localhost:8080/hello?xsd=xsd0" />
+    <MetadataFile FileName="ADVLService.disco" MetadataType="Disco" ID="d04aa836-7df7-42d4-9d28-99bd880bf843" SourceId="1" SourceUrl="http://localhost:8733/ADVLService?disco" />
+    <MetadataFile FileName="ADVLService.xsd" MetadataType="Schema" ID="a13a13d9-a403-4712-abe8-65013dde7ea1" SourceId="1" SourceUrl="http://localhost:8733/ADVLService?xsd=xsd0" />
+    <MetadataFile FileName="ADVLService1.xsd" MetadataType="Schema" ID="fab75051-83cb-476f-8282-6f2f5eac9318" SourceId="1" SourceUrl="http://localhost:8733/ADVLService?xsd=xsd1" />
+    <MetadataFile FileName="ADVLService2.xsd" MetadataType="Schema" ID="547124c3-8c06-436c-b551-679cb62281d2" SourceId="1" SourceUrl="http://localhost:8733/ADVLService?xsd=xsd2" />
+    <MetadataFile FileName="MsgService.wsdl" MetadataType="Wsdl" ID="c5270cee-ec8d-470c-80ac-f8bfffc5f9fa" SourceId="1" SourceUrl="http://localhost:8733/ADVLService?wsdl" />
   </Metadata>
   <Extensions>
     <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />
